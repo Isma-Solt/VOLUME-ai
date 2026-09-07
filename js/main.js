@@ -7,6 +7,16 @@
 (() => {
   'use strict';
 
+  /**
+   * Настройки отправки заявок в Telegram.
+   * botToken — токен бота от @BotFather.
+   * chatId   — числовой id чата, куда бот присылает заявки (см. README).
+   */
+  const TELEGRAM = {
+    botToken: '8923023720:AAHtBgT8700m7xxvCbDE0uEIdA9DVVH2wu8',
+    chatId: '1284888662',
+  };
+
   /* Шапка: фон при прокрутке */
   function initHeader() {
     const header = document.getElementById('header');
@@ -209,7 +219,7 @@
       setStatus('Отправляем…');
 
       try {
-        await sendLead(new FormData(form));
+        await sendLead(collectLead(form));
         form.reset();
         setStatus('Спасибо! Пришлём расчёт в течение одного рабочего дня.', 'success');
       } catch (error) {
@@ -220,15 +230,65 @@
     });
   }
 
-  /**
-   * Отправка заявки. Замените тело функции на запрос к вашему бэкенду,
-   * например: return fetch('/api/lead', { method: 'POST', body: formData });
-   */
-  function sendLead(formData) {
-    return new Promise((resolve) => {
-      console.info('Заявка:', Object.fromEntries(formData));
-      setTimeout(resolve, 600);
+  /* Собирает данные формы в объект; для select берём видимый текст варианта, а не value */
+  function collectLead(form) {
+    const typeField = form.elements.type;
+
+    return {
+      name: form.elements.name.value.trim(),
+      phone: form.elements.phone.value.trim(),
+      type: typeField.selectedIndex > 0 ? typeField.options[typeField.selectedIndex].text : '',
+      message: form.elements.message.value.trim(),
+    };
+  }
+
+  /* Экранирует текст пользователя для HTML-разметки Telegram */
+  function escapeHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* Текст сообщения для Telegram (parse_mode: HTML) */
+  function formatLeadMessage(lead) {
+    const date = new Date().toLocaleString('ru-RU', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
+
+    const lines = [
+      '<b>🏠 Новая заявка с сайта VOLUME</b>',
+      '',
+      `<b>👤 Имя:</b> ${escapeHtml(lead.name)}`,
+      `<b>📞 Телефон:</b> <code>${escapeHtml(lead.phone)}</code>`,
+      `<b>🏗 Тип объекта:</b> ${escapeHtml(lead.type)}`,
+    ];
+
+    if (lead.message) {
+      lines.push('', '<b>💬 О проекте:</b>', `<i>${escapeHtml(lead.message)}</i>`);
+    }
+
+    lines.push('', `<b>🕒</b> ${date}`);
+
+    return lines.join('\n');
+  }
+
+  /* Отправка заявки через Telegram Bot API */
+  async function sendLead(lead) {
+    if (!TELEGRAM.botToken || !TELEGRAM.chatId) {
+      throw new Error('Telegram не настроен: заполните TELEGRAM.botToken и TELEGRAM.chatId');
+    }
+
+    /* URLSearchParams вместо JSON: такой запрос не требует CORS-предзапроса, который Telegram не поддерживает */
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM.botToken}/sendMessage`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        chat_id: TELEGRAM.chatId,
+        text: formatLeadMessage(lead),
+        parse_mode: 'HTML',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Telegram API ответил статусом ${response.status}`);
+    }
   }
 
   /* Год в подвале */

@@ -266,13 +266,24 @@ button {
   inset: 0 0 auto;
   z-index: 100;
   height: var(--header-h);
-  transition: background-color 0.3s, box-shadow 0.3s;
 }
 
-.header.is-scrolled {
+/* Фон и размытие живут на псевдоэлементе: backdrop-filter на самой шапке
+   сделал бы её контейнером для фиксированного мобильного меню и сломал его */
+.header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: rgba(243, 243, 241, 0.9);
   backdrop-filter: blur(12px);
   box-shadow: 0 1px 0 var(--color-line);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.header.is-scrolled::before {
+  opacity: 1;
 }
 
 .header__inner {
@@ -1326,22 +1337,22 @@ textarea.field__input {
   .nav {
     position: fixed;
     inset: var(--header-h) 0 0;
+    z-index: 1;
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
     gap: 32px;
-    padding: 32px var(--gutter);
+    padding: 32px var(--gutter) 48px;
+    overflow-y: auto;
     background: var(--color-bg);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-8px);
-    transition: opacity 0.3s, transform 0.3s var(--ease), visibility 0.3s;
+    transition: opacity 0.25s, visibility 0.25s;
   }
 
   .nav.is-open {
     opacity: 1;
     visibility: visible;
-    transform: none;
   }
 
   .nav__list {
@@ -1362,6 +1373,10 @@ textarea.field__input {
 
   .header.is-menu-open {
     background: var(--color-bg);
+  }
+
+  .header.is-menu-open::before {
+    opacity: 0;
   }
 
   .burger {
