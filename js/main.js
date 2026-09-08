@@ -136,6 +136,12 @@
         works.forEach((work) => {
           const match = filter === 'all' || work.dataset.category === filter;
           work.classList.toggle('is-hidden', !match);
+          /* Перезапуск анимации появления для оставшихся карточек */
+          work.classList.remove('is-showing');
+          if (match) {
+            void work.offsetWidth;
+            work.classList.add('is-showing');
+          }
         });
       });
     });
@@ -291,6 +297,148 @@
     }
   }
 
+  /* FAQ: плавное раскрытие и сворачивание через Web Animations API */
+  function initFaq() {
+    const items = document.querySelectorAll('.faq__item');
+    if (!items.length) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timing = { duration: 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
+
+    items.forEach((item) => {
+      const summary = item.querySelector('.faq__question');
+      const body = item.querySelector('.faq__body');
+      if (!summary || !body) return;
+
+      let animation = null;
+
+      const open = () => {
+        item.open = true;
+        animation = body.animate([{ height: '0px', opacity: 0 }, { height: `${body.scrollHeight}px`, opacity: 1 }], timing);
+        animation.onfinish = () => { animation = null; };
+      };
+
+      const close = () => {
+        animation = body.animate([{ height: `${body.offsetHeight}px`, opacity: 1 }, { height: '0px', opacity: 0 }], timing);
+        animation.onfinish = () => {
+          item.open = false;
+          animation = null;
+        };
+      };
+
+      summary.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (reduceMotion) {
+          item.open = !item.open;
+          return;
+        }
+        if (animation) animation.cancel();
+        if (item.open) close(); else open();
+      });
+    });
+  }
+
+  /* Бегущая строка клиентов: дублируем список для бесшовного цикла */
+  function initMarquee() {
+    const list = document.getElementById('clients-list');
+    if (!list || list.children.length === 0) return;
+
+    const clones = [...list.children].map((item) => {
+      const clone = item.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      return clone;
+    });
+
+    list.append(...clones);
+  }
+
+  /* Подсветка активного пункта меню по текущей секции */
+  function initScrollSpy() {
+    const links = [...document.querySelectorAll('.nav__link[href^="#"]')];
+    if (!links.length || !('IntersectionObserver' in window)) return;
+
+    const sections = links
+      .map((link) => document.getElementById(link.hash.slice(1)))
+      .filter(Boolean);
+
+    const setActive = (id) => {
+      links.forEach((link) => link.classList.toggle('is-active', link.hash === `#${id}`));
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+
+    sections.forEach((section) => observer.observe(section));
+  }
+
+  /* «Прожектор» на карточках услуг: координаты курсора → CSS-переменные */
+  function initSpotlight() {
+    const list = document.querySelector('.services__list');
+    if (!list || !window.matchMedia('(hover: hover)').matches) return;
+
+    list.addEventListener('pointermove', (event) => {
+      const card = event.target.closest('.service');
+      if (!card) return;
+
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${event.clientX - rect.left}px`);
+      card.style.setProperty('--my', `${event.clientY - rect.top}px`);
+    });
+  }
+
+  /* Параллакс картинки в первом экране */
+  function initParallax() {
+    const media = document.querySelector('.hero__media');
+    const image = media && media.querySelector('img');
+    if (!image || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      const rect = media.getBoundingClientRect();
+      if (rect.bottom < 0) return;
+      image.style.setProperty('--parallax', `${Math.round(-rect.top * 0.08)}px`);
+    };
+
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }, { passive: true });
+
+    update();
+  }
+
+  /* Подтверждение звонка: все ссылки tel: открывают окно, звонок идёт по кнопке в нём */
+  function initCallDialog() {
+    const dialog = document.getElementById('call-dialog');
+    if (!dialog || typeof dialog.showModal !== 'function') return;
+
+    const numberEl = document.getElementById('call-dialog-number');
+    const callLink = document.getElementById('call-dialog-link');
+
+    document.addEventListener('click', (event) => {
+      const link = event.target.closest('a[href^="tel:"]');
+      if (!link || dialog.contains(link)) return;
+
+      event.preventDefault();
+      numberEl.textContent = link.textContent.trim().replace(/^Позвонить\s*/i, '');
+      callLink.href = link.href;
+      dialog.showModal();
+    });
+
+    dialog.addEventListener('click', (event) => {
+      /* Клик по подложке или по кнопке отмены закрывает окно; клик внутри карточки — нет */
+      if (event.target === dialog || event.target.closest('[data-dialog-close]')) dialog.close();
+    });
+
+    callLink.addEventListener('click', () => dialog.close());
+  }
+
   /* Год в подвале */
   function initYear() {
     const year = document.getElementById('year');
@@ -304,6 +452,12 @@
     initCounters();
     initPortfolioFilter();
     initLeadForm();
+    initFaq();
+    initMarquee();
+    initScrollSpy();
+    initSpotlight();
+    initParallax();
+    initCallDialog();
     initYear();
   });
 })();

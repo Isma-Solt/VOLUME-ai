@@ -175,6 +175,23 @@ button {
   color: var(--color-on-dark);
 }
 
+/* Единый стиль фокуса с клавиатуры вместо браузерного по умолчанию */
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.field__input:focus-visible {
+  outline: none;
+}
+
+/* У кнопок обводка прозрачная по умолчанию, поэтому фокус задаём явно */
+.btn:focus-visible,
+.phone:focus-visible,
+.burger:focus-visible {
+  outline-color: currentColor;
+}
+
 .skip-link {
   position: absolute;
   top: -100px;
@@ -203,7 +220,10 @@ button {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
-  transition: background-color 0.25s, color 0.25s, transform 0.25s var(--ease);
+  /* Прозрачная обводка на 3px от края: при наведении окрашивается и повторяет форму кнопки */
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: background-color 0.25s, color 0.25s, outline-color 0.25s, transform 0.25s var(--ease);
 }
 
 .btn:hover {
@@ -216,12 +236,18 @@ button {
 }
 
 .btn--primary:hover {
-  background: #000;
+  background: #2e2e2e;
+  outline-color: var(--color-ink);
 }
 
 .section--dark .btn--primary {
   background: #fff;
   color: var(--color-ink);
+}
+
+.section--dark .btn--primary:hover {
+  background: #e4e4e1;
+  outline-color: #fff;
 }
 
 .btn--ghost {
@@ -232,6 +258,7 @@ button {
 .btn--ghost:hover {
   background: var(--color-ink);
   color: #fff;
+  outline-color: var(--color-ink);
 }
 
 .btn--full {
@@ -242,11 +269,19 @@ button {
 .btn__icon {
   display: inline-grid;
   place-items: center;
+  flex: 0 0 24px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  font-size: 0.875rem;
-  line-height: 1;
+}
+
+.btn__icon svg {
+  display: block;
+  transition: transform 0.3s var(--ease);
+}
+
+.btn:hover .btn__icon svg {
+  transform: translateX(2px);
 }
 
 .btn--primary .btn__icon {
@@ -309,6 +344,37 @@ button {
   border-radius: 50%;
   border: 6px solid currentColor;
   border-right-color: transparent;
+  transition: transform 0.9s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* Наведение: кольцо делает оборот с пружинным замедлением,
+   а название прокручивается вверх, как барабан — второй экземпляр
+   текста лежит в ::after и въезжает снизу */
+.logo:hover .logo__mark {
+  transform: rotate(360deg) scale(1.08);
+}
+
+.logo__text {
+  display: inline-block;
+  overflow: hidden;
+  line-height: 1.1;
+}
+
+.logo__roll {
+  position: relative;
+  display: inline-block;
+  transition: transform 0.6s var(--ease);
+}
+
+.logo__roll::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 100%;
+  left: 0;
+}
+
+.logo:hover .logo__roll {
+  transform: translateY(-100%);
 }
 
 .nav {
@@ -329,7 +395,8 @@ button {
   transition: color 0.2s;
 }
 
-.nav__link:hover {
+.nav__link:hover,
+.nav__link.is-active {
   color: var(--color-ink);
 }
 
@@ -346,11 +413,14 @@ button {
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   box-shadow: 0 1px 0 var(--color-line);
-  transition: transform 0.25s var(--ease);
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: transform 0.25s var(--ease), outline-color 0.25s;
 }
 
 .phone:hover {
   transform: translateY(-2px);
+  outline-color: var(--color-ink);
 }
 
 .phone__icon {
@@ -389,6 +459,13 @@ button {
   padding: 10px;
   border-radius: 50%;
   background: var(--color-surface);
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 0.25s;
+}
+
+.burger:hover {
+  outline-color: var(--color-ink);
 }
 
 .burger span {
@@ -446,10 +523,13 @@ button {
   aspect-ratio: 4 / 3;
 }
 
+/* Лёгкий параллакс: --parallax задаёт скрипт при прокрутке, запас масштаба скрывает края */
 .hero__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: translateY(var(--parallax, 0px)) scale(1.1);
+  will-change: transform;
 }
 
 /* Плавное затухание низа картинки в цвет фона — заголовок читается на любой ширине */
@@ -478,6 +558,29 @@ button {
   text-transform: uppercase;
 }
 
+/* Слова заголовка выезжают снизу при загрузке, второе с задержкой */
+.hero__title-line {
+  animation: rise 1s var(--ease) both;
+}
+
+.hero__title-line:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
 /* ---------- 5. Секции ---------- */
 
 /* Клиенты */
@@ -504,12 +607,24 @@ button {
   color: var(--color-on-dark-muted);
 }
 
+/* Бегущая строка: список дублируется скриптом, сдвиг на 50% даёт бесшовный цикл */
+.clients__track {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+}
+
 .clients__list {
   display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 24px 40px;
+  width: max-content;
+  gap: clamp(40px, 5vw, 80px);
+  padding-right: clamp(40px, 5vw, 80px);
+  animation: marquee 32s linear infinite;
+}
+
+.clients__track:hover .clients__list {
+  animation-play-state: paused;
 }
 
 .clients__item {
@@ -518,12 +633,19 @@ button {
   font-size: 1.125rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
   opacity: 0.7;
   transition: opacity 0.2s;
 }
 
 .clients__item:hover {
   opacity: 1;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 /* О студии */
@@ -602,16 +724,37 @@ button {
 }
 
 .service {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: clamp(28px, 3vw, 40px);
   background: var(--color-dark);
+  overflow: hidden;
   transition: background-color 0.3s;
+}
+
+/* «Прожектор» следует за курсором: координаты задаёт скрипт через --mx / --my */
+.service::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.1), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
 }
 
 .service:hover {
   background: var(--color-dark-soft);
+}
+
+.service:hover::before {
+  opacity: 1;
+}
+
+.service > * {
+  position: relative;
 }
 
 .service__num {
@@ -662,6 +805,7 @@ button {
 
 .filters__btn:hover {
   border-color: var(--color-ink);
+  background: var(--color-surface);
   color: var(--color-ink);
 }
 
@@ -691,6 +835,10 @@ button {
   display: none;
 }
 
+.work.is-showing {
+  animation: fade-up 0.5s var(--ease) both;
+}
+
 .work__link {
   position: relative;
   display: block;
@@ -709,6 +857,27 @@ button {
   transform: scale(1.04);
 }
 
+/* Круглая стрелка появляется в углу карточки при наведении */
+.work__link::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff center / 18px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M8 7h9v9'/%3E%3C/svg%3E");
+  opacity: 0;
+  transform: translate(8px, -8px) scale(0.8);
+  transition: opacity 0.3s, transform 0.4s var(--ease);
+}
+
+.work__link:hover::after {
+  opacity: 1;
+  transform: none;
+}
+
 .work__info {
   position: absolute;
   inset: auto 0 0;
@@ -718,6 +887,11 @@ button {
   padding: 28px;
   color: #fff;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  transition: transform 0.4s var(--ease);
+}
+
+.work__link:hover .work__info {
+  transform: translateY(-4px);
 }
 
 .work__cat {
@@ -943,28 +1117,37 @@ button {
   text-transform: uppercase;
   cursor: pointer;
   list-style: none;
+  transition: color 0.2s;
+}
+
+.faq__question:hover {
+  color: var(--color-muted);
 }
 
 .faq__question::-webkit-details-marker {
   display: none;
 }
 
+/* Иконка «плюс» нарисована SVG, чтобы стоять строго по центру круга */
 .faq__question::after {
-  content: "+";
+  content: "";
   flex: 0 0 32px;
-  display: grid;
-  place-items: center;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   border: 1.5px solid var(--color-ink);
-  font-family: var(--font-body);
-  font-size: 1.125rem;
-  transition: transform 0.3s var(--ease);
+  background: center / 14px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+  transition: transform 0.4s var(--ease), background-color 0.3s;
 }
 
 .faq__item[open] .faq__question::after {
   transform: rotate(45deg);
+}
+
+/* Высота раскрытия анимируется скриптом, обёртка прячет лишнее */
+.faq__body {
+  overflow: hidden;
 }
 
 .faq__answer {
@@ -1019,6 +1202,31 @@ button {
 
 .contact__direct a:hover {
   text-decoration: underline;
+}
+
+.contact__address {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-size: 0.9375rem;
+  transition: color 0.2s;
+}
+
+.contact__address svg {
+  flex: 0 0 18px;
+}
+
+.contact__address small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.contact__address:hover small {
+  color: var(--color-ink);
 }
 
 .form {
@@ -1167,9 +1375,11 @@ textarea.field__input {
   font-size: 0.9375rem;
 }
 
-.footer__contacts p {
+.footer__address {
   color: var(--color-on-dark-muted);
   font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .footer__nav a,
@@ -1194,7 +1404,99 @@ textarea.field__input {
   color: var(--color-on-dark-muted);
 }
 
-/* ---------- 7. Анимации появления ---------- */
+/* ---------- 6a. Окно подтверждения звонка ---------- */
+
+.dialog {
+  width: min(100% - 32px, 420px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 32px 80px -24px rgba(0, 0, 0, 0.4);
+}
+
+.dialog::backdrop {
+  background: rgba(17, 17, 17, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+.dialog[open] {
+  animation: dialog-in 0.35s var(--ease);
+}
+
+.dialog[open]::backdrop {
+  animation: backdrop-in 0.35s;
+}
+
+.dialog__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 32px 32px;
+  text-align: center;
+}
+
+.dialog__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.dialog__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.dialog__number {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.dialog__note {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.dialog__actions .btn {
+  flex: 1 1 140px;
+  justify-content: center;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- 7. Анимации появления и наведения ---------- */
 
 .reveal {
   opacity: 0;
@@ -1207,19 +1509,78 @@ textarea.field__input {
   transform: none;
 }
 
+/* Карточки приподнимаются и получают тень; только для устройств с курсором */
+@media (hover: hover) {
+  .step,
+  .benefit,
+  .review,
+  .stats__item,
+  .portfolio__cta {
+    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.3s;
+  }
+
+  .step:hover,
+  .benefit:hover,
+  .portfolio__cta:hover {
+    transform: translateY(-6px);
+    border-color: transparent;
+    box-shadow: 0 24px 48px -20px rgba(17, 17, 17, 0.28);
+  }
+
+  .review:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 48px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .stats__item:hover .stats__value {
+    transform: translateY(-4px);
+  }
+
+  .stats__value {
+    transition: transform 0.4s var(--ease);
+  }
+
+  .step:hover .step__num {
+    color: var(--color-ink);
+  }
+
+  .step__num {
+    transition: color 0.4s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
-  .reveal {
+  .reveal,
+  .hero__title-line,
+  .work.is-showing {
     opacity: 1;
     transform: none;
     transition: none;
+    animation: none;
+  }
+
+  .clients__list {
+    animation: none;
+    flex-wrap: wrap;
+    width: auto;
+  }
+
+  .hero__media img {
+    transform: none;
   }
 
   .btn:hover,
-  .phone:hover {
+  .phone:hover,
+  .step:hover,
+  .benefit:hover,
+  .review:hover,
+  .portfolio__cta:hover,
+  .logo:hover .logo__mark,
+  .logo:hover .logo__roll {
     transform: none;
   }
 }
@@ -1396,8 +1757,8 @@ textarea.field__input {
     flex-basis: auto;
   }
 
-  .clients__list {
-    justify-content: flex-start;
+  .clients__track {
+    width: 100%;
   }
 
   .stats {
