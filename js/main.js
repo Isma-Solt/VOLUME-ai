@@ -34,13 +34,36 @@
     const header = document.getElementById('header');
     if (!burger || !nav || !header) return;
 
+    let savedScrollY = 0;
+
+    /* Блокировка прокрутки под открытым меню. iOS Safari игнорирует overflow: hidden
+       на body, поэтому фиксируем body и запоминаем позицию, чтобы вернуть её при закрытии */
+    const lockScroll = (lock) => {
+      const { style } = document.body;
+
+      if (lock) {
+        savedScrollY = window.scrollY;
+        style.position = 'fixed';
+        style.top = `-${savedScrollY}px`;
+        style.width = '100%';
+        return;
+      }
+
+      style.position = '';
+      style.top = '';
+      style.width = '';
+      window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+    };
+
     const setState = (open) => {
+      if (open === nav.classList.contains('is-open')) return;
+
       burger.classList.toggle('is-open', open);
       nav.classList.toggle('is-open', open);
       header.classList.toggle('is-menu-open', open);
       burger.setAttribute('aria-expanded', String(open));
       burger.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
-      document.body.style.overflow = open ? 'hidden' : '';
+      lockScroll(open);
     };
 
     burger.addEventListener('click', () => setState(!nav.classList.contains('is-open')));
