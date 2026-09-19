@@ -8,14 +8,11 @@
   'use strict';
 
   /**
-   * Настройки отправки заявок в Telegram.
-   * botToken — токен бота от @BotFather.
-   * chatId   — числовой id чата, куда бот присылает заявки (см. README).
+   * Адрес серверного обработчика заявок.
+   * Браузер отправляет данные сюда (на наш же сайт), а сервер уже пересылает
+   * их в Telegram. Так заявка работает даже там, где api.telegram.org заблокирован.
    */
-  const TELEGRAM = {
-    botToken: '8923023720:AAHtBgT8700m7xxvCbDE0uEIdA9DVVH2wu8',
-    chatId: '1284888662',
-  };
+  const LEAD_ENDPOINT = '/api/send.php';
 
   /* Шапка: фон при прокрутке */
   function initHeader() {
@@ -271,52 +268,16 @@
     };
   }
 
-  /* Экранирует текст пользователя для HTML-разметки Telegram */
-  function escapeHtml(text) {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  /* Текст сообщения для Telegram (parse_mode: HTML) */
-  function formatLeadMessage(lead) {
-    const date = new Date().toLocaleString('ru-RU', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
-
-    const lines = [
-      '<b>🏠 Новая заявка с сайта VOLUME</b>',
-      '',
-      `<b>👤 Имя:</b> ${escapeHtml(lead.name)}`,
-      `<b>📞 Телефон:</b> <code>${escapeHtml(lead.phone)}</code>`,
-      `<b>🏗 Тип объекта:</b> ${escapeHtml(lead.type)}`,
-    ];
-
-    if (lead.message) {
-      lines.push('', '<b>💬 О проекте:</b>', `<i>${escapeHtml(lead.message)}</i>`);
-    }
-
-    lines.push('', `<b>🕒</b> ${date}`);
-
-    return lines.join('\n');
-  }
-
-  /* Отправка заявки через Telegram Bot API */
+  /* Отправка заявки на серверный обработчик, который перешлёт её в Telegram */
   async function sendLead(lead) {
-    if (!TELEGRAM.botToken || !TELEGRAM.chatId) {
-      throw new Error('Telegram не настроен: заполните TELEGRAM.botToken и TELEGRAM.chatId');
-    }
-
-    /* URLSearchParams вместо JSON: такой запрос не требует CORS-предзапроса, который Telegram не поддерживает */
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM.botToken}/sendMessage`, {
+    const response = await fetch(LEAD_ENDPOINT, {
       method: 'POST',
-      body: new URLSearchParams({
-        chat_id: TELEGRAM.chatId,
-        text: formatLeadMessage(lead),
-        parse_mode: 'HTML',
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead),
     });
 
     if (!response.ok) {
-      throw new Error(`Telegram API ответил статусом ${response.status}`);
+      throw new Error(`Сервер ответил статусом ${response.status}`);
     }
   }
 

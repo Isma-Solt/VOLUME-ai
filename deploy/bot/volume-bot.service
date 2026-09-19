@@ -1,0 +1,33 @@
+# systemd-юнит: делает из бота службу, которая сама поднимается
+# после падения и после перезагрузки сервера.
+# Положить в /etc/systemd/system/volume-bot.service
+
+[Unit]
+Description=VOLUME Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/volume-bot
+ExecStart=/usr/bin/python3 /opt/volume-bot/bot.py
+
+# Если процесс упал — поднять через 5 секунд. Всегда.
+Restart=always
+RestartSec=5
+
+# Логи уходят в journalctl
+StandardOutput=journal
+StandardError=journal
+
+# Немного безопасности: боту не нужен доступ к остальной системе
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/etc/volume
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+# Нормализация переводов строк.
+# Windows пишет в конце строки CRLF, Linux — LF. Без этого файла git считал,
+# что вы переписали весь style.css целиком (3800 строк), хотя менялись единицы.
+# Теперь в репозитории всегда LF, а у вас на диске остаётся как удобно Windows.
+* text=auto eol=lf
+
+# Бинарные файлы не трогать
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
