@@ -11,6 +11,39 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
+/**
+ * Страховка от «немой» 500-й.
+ * Если PHP упадёт (например, не установлено нужное расширение), браузер
+ * получит не пустой ответ, а понятное сообщение, и оно же ляжет в лог nginx.
+ */
+register_shutdown_function(static function (): void {
+    $fatal = error_get_last();
+    if ($fatal && in_array($fatal['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('VOLUME: фатальная ошибка — ' . $fatal['message']);
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        echo json_encode(['ok' => false, 'error' => 'php fatal: ' . $fatal['message']]);
+    }
+});
+
+// Проверяем расширения до того, как упрёмся в них посреди работы
+$missing = [];
+if (!function_exists('curl_init')) {
+    $missing[] = 'php-curl';
+}
+if (!function_exists('mb_substr')) {
+    $missing[] = 'php-mbstring';
+}
+if ($missing) {
+    error_log('VOLUME: не установлены расширения PHP: ' . implode(', ', $missing));
+    http_response_code(500);
+    exit(json_encode([
+        'ok'    => false,
+        'error' => 'не установлены расширения PHP: ' . implode(', ', $missing),
+    ]));
+}
+
 // Принимаем только POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

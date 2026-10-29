@@ -27,13 +27,16 @@ MISSING=()
 command -v nginx >/dev/null || MISSING+=(nginx)
 command -v git   >/dev/null || MISSING+=(git)
 command -v curl  >/dev/null || MISSING+=(curl)
-ls /run/php/*.sock >/dev/null 2>&1 || MISSING+=(php-fpm php-curl)
+ls /run/php/*.sock >/dev/null 2>&1 || MISSING+=(php-fpm)
 
-if [ ${#MISSING[@]} -gt 0 ]; then
-    warn "ставлю: ${MISSING[*]}"
-    apt-get update -qq
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${MISSING[@]}"
-fi
+# Расширения ставим всегда: PHP мог быть в образе сервера, но без них
+# обработчик заявки падает с пустой 500-й (mb_substr и curl_init).
+MISSING+=(php-curl php-mbstring)
+
+warn "проверяю и доставляю: ${MISSING[*]}"
+apt-get update -qq
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${MISSING[@]}"
+systemctl restart php*-fpm 2>/dev/null || true
 ok "пакеты на месте"
 
 # определяем сокет PHP-FPM (версия может быть любой: 8.1, 8.2, 8.3…)
