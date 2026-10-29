@@ -1,6 +1,6 @@
 # Инструкция по серверу: обновление, dev-версия, бот, домен
 
-Написано под конкретно ваш проект: сайт VOLUME, сервер `62.60.251.123`,
+Написано под конкретно ваш проект: сайт VOLUME, сервер `138.124.35.110`,
 Ubuntu + nginx, папка сайта `/var/www/volume`, репозиторий
 `https://github.com/Isma-Solt/VOLUME-ai`.
 
@@ -66,7 +66,7 @@ git push origin main
 
 ```bash
 # подключиться к серверу
-ssh root@62.60.251.123
+ssh root@138.124.35.110
 
 # скачать скрипт настройки
 curl -fsSL -o /root/server-setup.sh \
@@ -97,7 +97,7 @@ bash /var/www/volume/deploy/dev-setup.sh
 ### 1.1 Подключиться к серверу
 
 ```bash
-ssh root@62.60.251.123
+ssh root@138.124.35.110
 ```
 
 Дальше все команды — на сервере.
@@ -223,7 +223,7 @@ git push origin main
 ### 2.2 На сервере: применить
 
 ```bash
-ssh root@62.60.251.123
+ssh root@138.124.35.110
 /var/www/volume/deploy/update.sh
 ```
 
@@ -321,7 +321,7 @@ nginx -t && systemctl reload nginx
 **Если домена ещё нет**, поддомен сделать не из чего. Временный вариант —
 повесить dev на отдельный порт: в конфиге замените `listen 80;` на
 `listen 8080;`, уберите строку `server_name`, и dev откроется по адресу
-`http://62.60.251.123:8080`.
+`http://138.124.35.110:8080`.
 
 ### 3.6 Рабочий цикл
 
@@ -445,9 +445,9 @@ curl -s -o /dev/null -w "%{http_code}\n" https://api.telegram.org
 
 | Тип | Имя | Значение |
 |---|---|---|
-| A | `@` | `62.60.251.123` |
-| A | `www` | `62.60.251.123` |
-| A | `dev` | `62.60.251.123` |
+| A | `@` | `138.124.35.110` |
+| A | `www` | `138.124.35.110` |
+| A | `dev` | `138.124.35.110` |
 
 Запись `A` — это «такое-то имя ведёт на такой-то IP». Изменения расходятся по
 интернету от 15 минут до нескольких часов.
@@ -491,17 +491,17 @@ systemctl status certbot.timer
 
 ```bash
 # обновить боевой сайт
-ssh root@62.60.251.123 '/var/www/volume/deploy/update.sh'
+ssh root@138.124.35.110 '/var/www/volume/deploy/update.sh'
 
 # обновить dev
-ssh root@62.60.251.123 '/var/www/volume-dev/deploy/update-dev.sh'
+ssh root@138.124.35.110 '/var/www/volume-dev/deploy/update-dev.sh'
 
 # откатить, если сломалось
-ssh root@62.60.251.123 '/var/www/volume/deploy/rollback.sh'
+ssh root@138.124.35.110 '/var/www/volume/deploy/rollback.sh'
 
 # посмотреть ошибки сайта
-ssh root@62.60.251.123 'tail -50 /var/log/nginx/volume.error.log'
+ssh root@138.124.35.110 'tail -50 /var/log/nginx/volume.error.log'
 
 # логи бота (если поднимали процесс)
-ssh root@62.60.251.123 'journalctl -u volume-bot -n 50'
+ssh root@138.124.35.110 'journalctl -u volume-bot -n 50'
 ```
