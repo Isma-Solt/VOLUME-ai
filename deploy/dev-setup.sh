@@ -19,6 +19,16 @@ ok()   { printf '    \033[32m✓\033[0m %s\n' "$1"; }
 warn() { printf '    \033[33m!\033[0m %s\n' "$1"; }
 die()  { printf '\n\033[31mОшибка: %s\033[0m\n' "$1" >&2; exit 1; }
 
+# Папка сайта принадлежит www-data, а скрипт работает от root — git считает
+# такой репозиторий «чужим» и отказывается с ним работать. Разрешаем явно.
+allow_repo() {
+    git config --global --get-all safe.directory 2>/dev/null | grep -qx "$1" \
+        || git config --global --add safe.directory "$1"
+}
+
+allow_repo "$DEV_DIR"
+allow_repo /var/www/volume
+
 [ "$(id -u)" -eq 0 ] || die "запустите под root: sudo bash dev-setup.sh"
 [ -f /etc/volume/bot.env ] || die "сначала прогоните server-setup.sh"
 

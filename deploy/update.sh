@@ -7,6 +7,15 @@ SITE_DIR=/var/www/volume
 BACKUP_DIR=/var/backups/volume
 STAMP=$(date +%Y%m%d-%H%M%S)
 
+# Папка сайта принадлежит www-data, а скрипт работает от root — git считает
+# такой репозиторий «чужим» и отказывается с ним работать. Разрешаем явно.
+allow_repo() {
+    git config --global --get-all safe.directory 2>/dev/null | grep -qx "$1" \
+        || git config --global --add safe.directory "$1"
+}
+
+allow_repo "$SITE_DIR"
+
 echo "==> 1/4 Делаю резервную копию"
 mkdir -p "$BACKUP_DIR"
 tar -czf "$BACKUP_DIR/volume-$STAMP.tar.gz" -C /var/www volume
